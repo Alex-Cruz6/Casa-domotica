@@ -1,0 +1,46 @@
+const int PIR_PIN = 2;   // Signal del PIR en D2
+const int LED_R = 6;     // LED rojo en D6
+const int LED_G = 7;     // LED verde en D7
+const int LED_B = 8;     // LED azul en D8
+
+bool huboMovimiento = false;  // recordamos si ya hubo movimiento
+
+void setup() {
+  pinMode(PIR_PIN, INPUT);
+  pinMode(LED_R, OUTPUT);
+  pinMode(LED_G, OUTPUT);
+  pinMode(LED_B, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  int motion = digitalRead(PIR_PIN);
+
+  if (motion == HIGH) {
+    Serial.println("Movimiento detectado");
+    huboMovimiento = true; // ya sabemos que alguien entró al área
+
+    // Rojo parpadea
+    digitalWrite(LED_R, HIGH);
+    digitalWrite(LED_G, LOW);
+    digitalWrite(LED_B, LOW);
+    delay(300);
+    digitalWrite(LED_R, LOW);
+    delay(300);
+
+  } else {
+    if (huboMovimiento) {
+      // Ya hubo movimiento → dentro del área pero quieto
+      Serial.println("Dentro del área, sin movimiento");
+      digitalWrite(LED_R, LOW);
+      digitalWrite(LED_G, LOW);
+      digitalWrite(LED_B, HIGH);
+    } else {
+      // Nunca hubo movimiento → fuera del área
+      Serial.println("Fuera del área");
+      digitalWrite(LED_R, LOW);
+      digitalWrite(LED_G, HIGH);
+      digitalWrite(LED_B, LOW);
+    }
+  }
+}
