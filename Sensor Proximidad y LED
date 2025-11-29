@@ -1,0 +1,79 @@
+// Proyecto: Asistente de aparcamiento para garaje domótico
+// Basado en HC-SR04 + 3 LEDs + buzzer
+
+#define pulso 9       // Pin que envía el pulso ultrasónico (TRIG)
+#define rebote 8      // Pin que recibe el eco del pulso (ECHO)
+  
+#define led_verde   13  // Zona segura: distancia amplia
+#define led_naranja 12  // Zona de precaución
+#define led_rojo    11  // Zona de peligro / muy cerca
+  
+#define zumbador    10  // Buzzer piezoeléctrico
+
+// Umbrales de distancia en cm (puedes ajustarlos según el tamaño del garaje)
+#define SIN_PROBLEMA 100   // > 100 cm: vehículo lejos del obstáculo
+#define PRECAUCION   20    // 20–100 cm: acercamiento; < 20 cm: muy cerca
+  
+int distancia;    // distancia medida en cm
+float tiempo;     // tiempo del eco en microsegundos
+  
+void setup() {
+  Serial.begin(9600);          // Monitor serie para depuración
+  
+  pinMode(pulso, OUTPUT);      // TRIG del HC-SR04
+  pinMode(rebote, INPUT);      // ECHO del HC-SR04
+  
+  pinMode(led_verde, OUTPUT);
+  pinMode(led_naranja, OUTPUT);
+  pinMode(led_rojo, OUTPUT);
+  
+  pinMode(zumbador, OUTPUT);
+}
+  
+void loop() {
+  // ---- Medición con el ultrasónico ----
+  digitalWrite(pulso, LOW);      // estabilizar
+  delayMicroseconds(5);
+  digitalWrite(pulso, HIGH);     // disparar pulso
+  delayMicroseconds(10);
+  digitalWrite(pulso, LOW);
+  
+  tiempo = pulseIn(rebote, HIGH);   // tiempo de ida y vuelta del pulso
+  distancia = 0.01715 * tiempo;     // conversión a cm (velocidad del sonido)
+
+  Serial.print("Distancia: ");
+  Serial.print(distancia);
+  Serial.println(" cm");
+    
+  // ---- Lógica de zonas para casa inteligente (garaje) ----
+  if (distancia > SIN_PROBLEMA) {
+    // Zona segura: vehículo lejos del muro/otro coche
+    digitalWrite(led_verde, HIGH);
+    digitalWrite(led_naranja, LOW);
+    digitalWrite(led_rojo, LOW);
+    tone(zumbador, 1500, 200);  // Aviso suave, el sistema está activo
+  }
+  else if (distancia <= SIN_PROBLEMA && distancia > PRECAUCION) {
+    // Zona de precaución: reducir velocidad
+    digitalWrite(led_verde, LOW);
+    digitalWrite(led_naranja, HIGH);
+    digitalWrite(led_rojo, LOW);
+    tone(zumbador, 2500, 200);  // Pitido intermedio
+  }
+  else if (distancia > 0 && distancia <= PRECAUCION) {
+    // Zona de peligro: muy cerca del obstáculo
+    digitalWrite(led_verde, LOW);
+    digitalWrite(led_naranja, LOW);
+    digitalWrite(led_rojo, HIGH);
+    tone(zumbador, 3500, 200);  // Pitido más agudo
+  } 
+  else {
+    // Sin lectura válida (eco 0 o ruido): todo apagado
+    digitalWrite(led_verde, LOW);
+    digitalWrite(led_naranja, LOW);
+    digitalWrite(led_rojo, LOW);
+    noTone(zumbador);
+  }
+
+  delay(500); // Pequeño retardo para que los cambios se perciban claramente
+}
